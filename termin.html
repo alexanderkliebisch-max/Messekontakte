@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Wiedervorlage Messekontakt</title>
+<style>
+:root{--bg:#eef1f4;--surface:#fff;--ink:#18212b;--muted:#5b6876;--line:#c9d1da;--steel:#2b3d52;--accent:#0a6fb8;--accent-ink:#fff;--warn:#b4471b}
+@media (prefers-color-scheme:dark){:root{--bg:#11161c;--surface:#1a222b;--ink:#e6ebf0;--muted:#9aa7b4;--line:#334150;--steel:#9fb6cf;--accent:#4fa3e3;--accent-ink:#06121d;--warn:#f08a5d;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-inline:16px}
+main{max-width:520px;margin:8vh auto 0;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--steel);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:1.5rem;color:var(--steel)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+dt{color:var(--muted)}dd{margin:0;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none;border:0;font-size:1rem;cursor:pointer}
+ol{margin:0;padding-left:1.2em;color:var(--muted)}
+.err{color:var(--warn)}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<main id="m">
+  <h1>Wiedervorlage / Follow-up</h1>
+  <p id="msg">Termin wird vorbereitet …</p>
+</main>
+<script>
+window.addEventListener('hashchange',()=>location.reload());
+(function(){
+  const m=document.getElementById('m');
+  const q=new URLSearchParams(location.hash.slice(1));
+  const d=(q.get('d')||'').trim(),f=(q.get('f')||'').trim(),n=(q.get('n')||'').trim(),t=(q.get('t')||'').trim();
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  if(!/^\d{4}-\d\d-\d\d$/.test(d)){m.innerHTML='<h1>Wiedervorlage / Follow-up</h1><p class="err">Dieser Link enthält kein gültiges Datum. Bitte den Link direkt aus der Messekontakt-Mail öffnen.<br>This link contains no valid date.</p>';return}
+  const day=new Date(d+'T12:00:00');const next=new Date(day.getTime()+864e5);
+  const ymd=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0');
+  const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+  const fold=line=>{const out=[];let cur='';for(const ch of line){if(new TextEncoder().encode(cur+ch).length>73){out.push(cur);cur=' '+ch}else cur+=ch}out.push(cur);return out.join('\r\n')};
+  const who=[f,n].filter(Boolean).join(' – ')||'Kontakt';
+  const summary='Wiedervorlage Messekontakt: '+who;
+  const desc=['Messekontakt EuroBLECH 2026 – Wiedervorlage','Firma: '+(f||'–'),'Name: '+(n||'–'),'Telefon: '+(t||'–'),'','Vollständiger Bericht: siehe Messekontakt-Mail mit PDF.'].join('\n');
+  const now=new Date();const stamp=now.toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z');
+  const uid=ymd(day)+'-'+Math.random().toString(36).slice(2)+'@messekontakt';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Messekontakt EuroBLECH 2026//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+    'UID:'+uid,'DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+ymd(day),'DTEND;VALUE=DATE:'+ymd(next),
+    'SUMMARY:'+icsEsc(summary),'DESCRIPTION:'+icsEsc(desc),'TRANSP:TRANSPARENT','END:VEVENT','END:VCALENDAR'].map(fold).join('\r\n')+'\r\n';
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});const url=URL.createObjectURL(blob);
+  const safe=(f||n||'Kontakt').replace(/[^\wäöüÄÖÜß-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'Kontakt';
+  const fname='Wiedervorlage_'+safe+'_'+d+'.ics';
+  const dDE=d.split('-').reverse().join('.');
+  m.innerHTML='<h1>Wiedervorlage / Follow-up</h1>'+
+    '<dl><dt>Datum</dt><dd>'+esc(dDE)+' (ganztägig)</dd><dt>Firma</dt><dd>'+esc(f||'–')+'</dd><dt>Name</dt><dd>'+esc(n||'–')+'</dd><dt>Telefon</dt><dd>'+esc(t||'–')+'</dd></dl>'+
+    '<a class="btn" id="dl" href="'+url+'" download="'+esc(fname)+'">Termin herunterladen / Download appointment</a>'+
+    '<ol><li>Die heruntergeladene Datei <b>'+esc(fname)+'</b> öffnen.</li><li>Outlook zeigt den Termin an → <b>Speichern &amp; schließen</b>.</li></ol>'+
+    '<small>Open the downloaded file, Outlook shows the appointment → Save &amp; Close. Die Daten stehen nur im Link und werden nicht an einen Server übertragen.</small>';
+  try{document.getElementById('dl').click()}catch(e){}
+})();
+</script>
+</body>
+</html>
